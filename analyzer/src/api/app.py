@@ -4,8 +4,8 @@ from fastapi.responses import JSONResponse
 import structlog
 from contextlib import asynccontextmanager
 
-from ..config.settings import settings
-from .routes import router
+from src.config.settings import settings
+from src.api.routes import router
 
 # Configure structured logging
 structlog.configure(
