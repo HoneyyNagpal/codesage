@@ -1,0 +1,109 @@
+.analyses-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.analyses-count {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.analyses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.analysis-item {
+  border: 2px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 1.25rem;
+  transition: all 0.2s;
+}
+
+.analysis-item:hover {
+  border-color: #667eea;
+}
+
+.analysis-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.analysis-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.repo-link {
+  font-size: 15px;
+  font-weight: 600;
+  color: #667eea;
+  text-decoration: none;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.analysis-date {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.status-badge-small {
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge-small.completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge-small.processing {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.score-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.score-progress {
+  flex: 1;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.score-fill {
+  height: 100%;
+  border-radius: 10px;
+}
+
+.score-fill.high {
+  background: #10b981;
+}
+
+.score-fill.medium {
+  background: #f59e0b;
+}
+
+.score-fill.low {
+  background: #ef4444;
+}
+
+.score-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f2937;
+}

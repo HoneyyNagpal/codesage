@@ -3,6 +3,9 @@ import { BrowserRouter } from 'react-router-dom';
 import AnalysisForm from './components/AnalysisForm';
 import AuthButton from './components/AuthButton';
 import { analysisAPI } from './services/api';
+import './styles/App.css';
+import './styles/AnalysisList.css';
+import AnalysisDetails from './components/AnalysisDetails';
 
 function App() {
   const [analyses, setAnalyses] = useState([]);
@@ -11,6 +14,8 @@ function App() {
   useEffect(() => {
     checkBackend();
     loadAnalyses();
+    const interval = setInterval(loadAnalyses, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const checkBackend = async () => {
@@ -31,63 +36,95 @@ function App() {
     }
   };
 
-  const handleAnalysisSuccess = (result) => {
+  const handleAnalysisSuccess = () => {
     loadAnalyses();
-    alert(`Analysis started! ID: ${result.id}`);
+  };
+
+  const getScoreClass = (score) => {
+    if (score >= 80) return 'high';
+    if (score >= 60) return 'medium';
+    return 'low';
   };
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white shadow">
-          <div className="max-w-7xl mx-auto py-6 px-4 flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900">
-              CodeSage - AI Code Review
-            </h1>
-            <div className="flex gap-2 text-sm">
-              <span className={`px-3 py-1 rounded-full ${backendStatus === 'healthy' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                Backend: {backendStatus}
-              </span>
+      <div className="app-container">
+        <header className="header">
+          <div className="header-content">
+            <div className="logo-section">
+              <div className="logo">CS</div>
+              <div className="logo-text">
+                <h1>CodeSage</h1>
+                <p>AI-Powered Code Review Platform</p>
+              </div>
+            </div>
+            <div className="header-actions">
+              <div className={`status-badge ${backendStatus === 'healthy' ? 'online' : 'offline'}`}>
+                <span className={`status-dot ${backendStatus === 'healthy' ? 'online' : 'offline'}`}></span>
+                {backendStatus === 'healthy' ? 'Online' : 'Offline'}
+              </div>
               <AuthButton />
             </div>
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto py-6 px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Analysis Form */}
-            <AnalysisForm onSuccess={handleAnalysisSuccess} />
+        <main className="main-content">
+          <AnalysisForm onSuccess={handleAnalysisSuccess} />
 
-            {/* Recent Analyses */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-2xl font-bold mb-4">Recent Analyses</h2>
-              {analyses.length === 0 ? (
-                <p className="text-gray-500">No analyses yet. Submit a repository to get started!</p>
-              ) : (
-                <div className="space-y-3">
-                  {analyses.map((analysis) => (
-                    <div key={analysis.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900 truncate">{analysis.repoUrl}</p>
-                          <p className="text-sm text-gray-500">
-                            {new Date(analysis.createdAt).toLocaleString()}
-                          </p>
-                        </div>
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          analysis.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          analysis.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                          analysis.status === 'failed' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {analysis.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+          <div className="card">
+            <div className="analyses-header">
+              <h2 className="card-title">Recent Analyses</h2>
+              <span className="analyses-count">{analyses.length} total</span>
             </div>
+            
+            {analyses.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 className="empty-title">No analyses yet</h3>
+                <p className="empty-text">Submit a repository to get started!</p>
+              </div>
+            ) : (
+              <div className="analyses-list">
+                {analyses.map((analysis) => (
+                  <div key={analysis.id} className="analysis-item">
+                    <div className="analysis-header">
+                      <div className="analysis-info">
+                        <a 
+                          href={analysis.repoUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="repo-link"
+                        >
+                          {analysis.repoUrl.replace('https://github.com/', '')}
+                        </a>
+                        <p className="analysis-date">
+                          {new Date(analysis.createdAt).toLocaleString()}
+                        </p>
+                        {analysis.score !== null && (
+                          <div className="score-bar">
+                            <div className="score-progress">
+                              <div 
+                                className={`score-fill ${getScoreClass(analysis.score)}`}
+                                style={{ width: `${analysis.score}%` }}
+                              />
+                            </div>
+                            <span className="score-value">{analysis.score}/100</span>
+                          </div>
+                        )}
+                      </div>
+                      <span className={`status-badge-small ${analysis.status}`}>
+                        {analysis.status}
+                      </span>
+                    </div>
+                    <AnalysisDetails analysis={analysis} />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </main>
       </div>

@@ -15,6 +15,7 @@ router.post('/', async (req, res) => {
       repoUrl,
       language: language || 'auto',
       status: 'pending',
+      userId: req.user?.id, // Associate with logged-in user
     });
 
     // Send to analyzer service
@@ -26,7 +27,31 @@ router.post('/', async (req, res) => {
         analyze_performance: analyzePerformance,
       });
 
-      await analysis.update({ status: 'processing' });
+      const analysisId = analyzerResponse.data.analysis_id;
+
+      await analysis.update({
+        status: 'processing',
+      });
+
+      // Poll for results after 5 seconds
+      setTimeout(async () => {
+        try {
+          const resultResponse = await axios.get(`${ANALYZER_URL}/api/v1/analyze/${analysisId}`);
+          const result = resultResponse.data;
+
+          await db.Analysis.update(
+            {
+              status: result.status,
+              score: result.score,
+              issues: result.issues,
+              recommendations: [result.summary],
+            },
+            { where: { id: analysis.id } }
+          );
+        } catch (error) {
+          console.error('Failed to fetch analysis results:', error);
+        }
+      }, 5000);
 
       res.status(201).json({
         id: analysis.id,
@@ -47,7 +72,9 @@ router.post('/', async (req, res) => {
 // Get all analyses
 router.get('/', async (req, res) => {
   try {
+    const where = req.user ? { userId: req.user.id } : {};
     const analyses = await db.Analysis.findAll({
+      where,
       order: [['createdAt', 'DESC']],
     });
     res.json(analyses);
