@@ -25,7 +25,7 @@ const logger = {
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: 'https://codesage-frontend.vercel.app',
   credentials: true
 }));
 app.use(compression());
