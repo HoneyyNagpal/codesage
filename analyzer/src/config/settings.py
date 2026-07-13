@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     # LLM Configuration
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
+    GROQ_API_KEY: str
     DEFAULT_LLM_PROVIDER: str = "anthropic"
     LLM_MAX_TOKENS: int = 2000
     LLM_TEMPERATURE: float = 0.3
@@ -51,7 +52,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
-
+   
 
 # Create settings instance
 settings = Settings()
