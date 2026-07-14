@@ -1,13 +1,13 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
-from typing import Optional, List, Dict
+from typing import Optional, List
 import uuid
 import asyncio
 import os
+import json
 
 router = APIRouter()
 
-# In-memory storage 
 analysis_results = {}
 
 class AnalysisRequest(BaseModel):
@@ -38,13 +38,10 @@ class AnalysisResult(BaseModel):
     summary: str = ""
 
 async def perform_analysis(analysis_id: str, repo_url: str, language: str):
-    """Use Groq to analyze repository"""
     await asyncio.sleep(2)
-
     try:
         from groq import Groq
         client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-        
         prompt = f"""Analyze this GitHub repository: {repo_url}
 
 You are a senior code reviewer. Based on the repository name and type, identify 3-5 realistic and specific issues.
@@ -62,24 +59,19 @@ Return ONLY valid JSON in this exact format:
     }}
   ]
 }}"""
-
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
             max_tokens=1000
         )
-        
-        import json
         result = json.loads(response.choices[0].message.content)
         issues = result.get("issues", [])
-        
     except Exception as e:
         print(f"Groq error: {e}")
         issues = []
-    
+
     score = max(100 - (len(issues) * 15), 55)
-    
     analysis_results[analysis_id] = {
         "analysis_id": analysis_id,
         "status": "completed",
@@ -88,9 +80,19 @@ Return ONLY valid JSON in this exact format:
         "issues": issues,
         "summary": f"Found {len(issues)} issues. Score: {score}/100"
     }
-    # Run analysis in background
+
+@router.post("/analyze", response_model=AnalysisResponse)
+async def analyze_repository(request: AnalysisRequest, background_tasks: BackgroundTasks):
+    analysis_id = str(uuid.uuid4())
+    analysis_results[analysis_id] = {
+        "analysis_id": analysis_id,
+        "status": "processing",
+        "repo_url": request.repo_url,
+        "score": None,
+        "issues": [],
+        "summary": "Analysis in progress..."
+    }
     background_tasks.add_task(perform_analysis, analysis_id, request.repo_url, request.language)
-    
     return AnalysisResponse(
         analysis_id=analysis_id,
         status="processing",
@@ -99,9 +101,6 @@ Return ONLY valid JSON in this exact format:
 
 @router.get("/analyze/{analysis_id}", response_model=AnalysisResult)
 async def get_analysis(analysis_id: str):
-    """Get analysis results"""
-    
     if analysis_id not in analysis_results:
         raise HTTPException(status_code=404, detail="Analysis not found")
-    
     return analysis_results[analysis_id]
