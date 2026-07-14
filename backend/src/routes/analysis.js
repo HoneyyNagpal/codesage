@@ -51,7 +51,7 @@ router.post('/', async (req, res) => {
         } catch (error) {
           console.error('Failed to fetch analysis results:', error);
         }
-      }, 5000);
+      }, 15000);
 
       res.status(201).json({
         id: analysis.id,
