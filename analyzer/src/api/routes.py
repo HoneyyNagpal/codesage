@@ -42,43 +42,26 @@ async def perform_analysis(analysis_id: str, repo_url: str, language: str):
     try:
         from groq import Groq
         client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-        prompt = f"""You are a senior code reviewer analyzing the GitHub repository: {repo_url}
-
-Identify 3 specific code issues. You MUST respond with ONLY a JSON object, no markdown, no explanation, no code blocks.
-
-{{"issues":[{{"type":"security","severity":"high","file":"src/main.py","line":12,"message":"issue description here","recommendation":"fix description here"}},{{"type":"performance","severity":"medium","file":"src/utils.py","line":34,"message":"issue description here","recommendation":"fix description here"}},{{"type":"quality","severity":"low","file":"README.md","line":1,"message":"issue description here","recommendation":"fix description here"}}]}}
-
-Replace the placeholder text with real issues specific to {repo_url}. Return ONLY the JSON, nothing else."""
 
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": "You are a JSON API. You output only valid JSON, never markdown, never explanation."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": "You are a code reviewer. Analyze GitHub repositories and identify issues. Always respond with valid JSON only."},
+                {"role": "user", "content": f"Analyze this GitHub repository and find 3-5 real issues: {repo_url}\n\nThe repository is about: {repo_url.split('/')[-1].replace('-', ' ').replace('_', ' ')}\n\nRespond with JSON in this format: {{\"issues\": [{{\"type\": \"security\", \"severity\": \"high\", \"file\": \"filename.py\", \"line\": 10, \"message\": \"description\", \"recommendation\": \"how to fix\"}}]}}"}
             ],
             temperature=0.3,
-            max_tokens=1000
+            max_tokens=1000,
+            response_format={"type": "json_object"}
         )
-        
-        raw = response.choices[0].message.content.strip()
-        
-        # Strip markdown if model ignores instructions
-        if "```" in raw:
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        
-        raw = raw.strip()
-        start = raw.find("{")
-        end = raw.rfind("}") + 1
-        raw = raw[start:end]
-        
+
+        raw = response.choices[0].message.content
+        print(f"Groq response: {raw}")
         result = json.loads(raw)
         issues = result.get("issues", [])
-        
+        print(f"Issues found: {len(issues)}")
+
     except Exception as e:
         print(f"Groq error: {e}")
-        # Meaningful fallback based on repo name
         repo_name = repo_url.split("/")[-1]
         issues = [
             {"type": "security", "severity": "medium", "file": "src/main.py", "line": 15, "message": f"Input validation missing in {repo_name}", "recommendation": "Add input sanitization before processing user data"},
