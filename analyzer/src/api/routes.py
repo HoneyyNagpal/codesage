@@ -67,6 +67,9 @@ Return ONLY valid JSON in this exact format:
         )
         result = json.loads(response.choices[0].message.content)
         issues = result.get("issues", [])
+        
+        print(f"Groq raw response: {response.choices[0].message.content}")
+        print(f"Parsed issues: {issues}") 
     except Exception as e:
         print(f"Groq error: {e}")
         issues = []
