@@ -25,7 +25,7 @@ class Issue(BaseModel):
     type: str
     severity: str
     file: str
-    line: int
+    line: Optional[int] = None
     message: str
     recommendation: str
 
