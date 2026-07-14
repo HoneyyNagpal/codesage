@@ -38,21 +38,16 @@ class AnalysisResult(BaseModel):
     summary: str = ""
 
 async def perform_analysis(analysis_id: str, repo_url: str, language: str):
-    """Use OpenAI to analyze repository"""
+    """Use Groq to analyze repository"""
     await asyncio.sleep(2)
 
-    print(f"OpenAI Key exists: {bool(os.getenv('OPENAI_API_KEY'))}")
-    
     try:
-        from openai import OpenAI
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        from groq import Groq
+        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         
         prompt = f"""Analyze this GitHub repository: {repo_url}
 
-You are a senior code reviewer. Identify 3-5 realistic issues covering:
-1. Security vulnerabilities
-2. Performance problems
-3. Code quality issues
+You are a senior code reviewer. Based on the repository name and type, identify 3-5 realistic and specific issues.
 
 Return ONLY valid JSON in this exact format:
 {{
@@ -60,16 +55,16 @@ Return ONLY valid JSON in this exact format:
     {{
       "type": "security",
       "severity": "high",
-      "file": "app.py",
+      "file": "src/main.py",
       "line": 42,
-      "message": "Issue description",
-      "recommendation": "How to fix"
+      "message": "Specific issue description relevant to this repo",
+      "recommendation": "How to fix this specific issue"
     }}
   ]
 }}"""
 
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
             max_tokens=1000
@@ -80,49 +75,19 @@ Return ONLY valid JSON in this exact format:
         issues = result.get("issues", [])
         
     except Exception as e:
-        print(f"OpenAI error: {e}")
-        # Fallback to mock data
-        import hashlib
-        repo_hash = int(hashlib.md5(repo_url.encode()).hexdigest(), 16)
-        issues = [
-            {
-                "type": "security",
-                "severity": "high" if repo_hash % 3 == 0 else "medium",
-                "file": "src/main.py",
-                "line": (repo_hash % 100) + 10,
-                "message": "Potential SQL injection vulnerability",
-                "recommendation": "Use parameterized queries"
-            }
-        ]
+        print(f"Groq error: {e}")
+        issues = []
     
-    score = 100 - (len(issues) * 15)
+    score = max(100 - (len(issues) * 15), 55)
     
     analysis_results[analysis_id] = {
         "analysis_id": analysis_id,
         "status": "completed",
         "repo_url": repo_url,
-        "score": max(score, 55),
+        "score": score,
         "issues": issues,
-        "summary": f"Found {len(issues)} issues. Score: {max(score, 55)}/100"
+        "summary": f"Found {len(issues)} issues. Score: {score}/100"
     }
-
-@router.post("/analyze", response_model=AnalysisResponse)
-async def analyze_repository(request: AnalysisRequest, background_tasks: BackgroundTasks):
-    """Analyze a GitHub repository"""
-    
-    # Generate analysis ID
-    analysis_id = str(uuid.uuid4())
-    
-    # Initialize result
-    analysis_results[analysis_id] = {
-        "analysis_id": analysis_id,
-        "status": "processing",
-        "repo_url": request.repo_url,
-        "score": None,
-        "issues": [],
-        "summary": "Analysis in progress..."
-    }
-    
     # Run analysis in background
     background_tasks.add_task(perform_analysis, analysis_id, request.repo_url, request.language)
     
