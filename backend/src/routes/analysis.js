@@ -71,7 +71,17 @@ router.post('/', async (req, res) => {
 
 // Get all analyses
 router.get('/', async (req, res) => {
-  return res.json([]);
+    try {
+    const where = req.user ? { userId: req.user.id } : {};
+    const analyses = await db.Analysis.findAll({
+      where,
+      order: [['createdAt', 'DESC']],
+    });
+    res.json(analyses);
+  } catch (error) {
+    console.error('Get analyses error:', error);
+    res.status(500).json({ error: 'Failed to fetch analyses' });
+  }
 });
 // Get single analysis
 router.get('/:id', async (req, res) => {
