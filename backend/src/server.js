@@ -12,7 +12,7 @@ const db = require('./config/database');
 
 const app = express();
 const { createClient } = require('redis');
-const { RedisStore } = require('connect-redis');
+const RedisStore = require('connect-redis').default;
 
 const redisClient = createClient({ url: process.env.REDIS_URL });
 redisClient.connect().catch((err) => console.error('Redis connection error:', err));
