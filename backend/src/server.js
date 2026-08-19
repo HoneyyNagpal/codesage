@@ -15,8 +15,9 @@ const { createClient } = require('redis');
 const RedisStore = require('connect-redis').default;
 
 const redisClient = createClient({ url: process.env.REDIS_URL });
-redisClient.connect().catch((err) => console.error('Redis connection error:', err));
-const server = http.createServer(app);
+redisClient.connect()
+  .then(() => logger.info('Redis connected'))
+  .catch((err) => console.error('Redis connection error:', err));
 
 // Get port from environment
 const PORT = process.env.PORT || 5001;
@@ -35,6 +36,10 @@ app.use(cors({
 }));
 app.use(compression());
 app.use(express.json());
+app.use((req, res, next) => {
+  logger.info(`${req.method} ${req.path}`);
+  next();
+});
 // Session configuration
 app.use(cookieParser());
 app.use(session({
