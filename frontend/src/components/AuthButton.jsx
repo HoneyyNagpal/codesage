@@ -6,10 +6,16 @@ function AuthButton() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
+useEffect(() => {
+  // Check for token in URL after OAuth redirect
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  if (token) {
+    localStorage.setItem('token', token);
+    window.history.replaceState({}, document.title, window.location.pathname); // clean URL
+  }
+  checkAuth();
+}, []);
   const checkAuth = async () => {
     try {
       const userData = await authAPI.getCurrentUser();

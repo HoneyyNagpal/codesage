@@ -7,23 +7,27 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Important for cookies/sessions
+});
+
+// Attach JWT token to every request if present
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export const authAPI = {
-  // Get current user
   getCurrentUser: async () => {
     const response = await api.get('/api/v1/auth/user');
     return response.data;
   },
-
-  // Logout
   logout: async () => {
+    localStorage.removeItem('token');
     const response = await api.post('/api/v1/auth/logout');
     return response.data;
   },
-
-  // GitHub login URL
   getGitHubLoginUrl: () => {
     return `${API_URL}/api/v1/auth/github`;
   },
