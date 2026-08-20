@@ -11,13 +11,10 @@ const http = require('http');
 const db = require('./config/database');
 
 const app = express();
+const server = http.createServer(app);
+
 const { createClient } = require('redis');
 const RedisStore = require('connect-redis').default;
-
-const redisClient = createClient({ url: process.env.REDIS_URL });
-redisClient.connect()
-  .then(() => logger.info('Redis connected'))
-  .catch((err) => console.error('Redis connection error:', err));
 
 // Get port from environment
 const PORT = process.env.PORT || 5001;
@@ -27,6 +24,11 @@ const logger = {
   info: (msg) => console.log(`ℹ️  ${msg}`),
   error: (msg, err) => console.error(` ${msg}`, err || '')
 };
+
+const redisClient = createClient({ url: process.env.REDIS_URL });
+redisClient.connect()
+  .then(() => logger.info('Redis connected'))
+  .catch((err) => console.error('Redis connection error:', err));
 
 // Middleware
 app.use(helmet());
@@ -87,8 +89,6 @@ app.get('/', (req, res) => {
 // Start server
 const startServer = async () => {
   try {
-    // Database connection commented out for now
-  
     await db.sequelize.authenticate();
     logger.info('Database connected');
     await db.sequelize.sync({ alter: true });
