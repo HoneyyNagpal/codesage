@@ -104,7 +104,7 @@ const startServer = async () => {
   }
 };
 
-const authRoutes = require('./routes/auth');
+const { router: authRoutes } = require('./routes/auth');
 app.use('/api/v1/auth', authRoutes);
 
 const analysisRoutes = require('./routes/analysis');
