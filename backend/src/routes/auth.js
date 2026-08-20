@@ -10,7 +10,9 @@ router.get(
   '/github/callback',
   passport.authenticate('github', { failureRedirect: '/login' }),
   (req, res) => {
-    // Successful authentication, redirect to frontend
+    console.log('Callback reached. User:', req.user ? req.user.username : 'NO USER');
+    console.log('Session ID:', req.sessionID);
+    console.log('Is authenticated:', req.isAuthenticated());
     res.redirect(`${process.env.FRONTEND_URL}?auth=success`);
   }
 );
