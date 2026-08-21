@@ -8,12 +8,6 @@ function AnalysisDetails({ analysis }) {
     return null;
   }
 
-  const getScoreSummary = (score) => {
-    if (score >= 80) return 'High code health and best practice adherence.';
-    if (score >= 60) return 'Acceptable quality with specific maintenance recommendations.';
-    return 'Critical attention required across security or architecture areas.';
-  };
-
   return (
     <div className="details-wrapper">
       <button 
@@ -34,29 +28,16 @@ function AnalysisDetails({ analysis }) {
         >
           <polyline points="9 18 15 12 9 6" />
         </svg>
-        <span>{isOpen ? 'Hide breakdown' : 'View full breakdown'}</span>
+        <span>{isOpen ? 'Hide findings' : `View ${analysis.issues?.length || 0} findings`}</span>
       </button>
 
       {isOpen && (
         <div className="details-expanded-panel">
-          <div className="metric-highlight-card">
-            <div className="metric-score-group">
-              <span className="metric-value">{analysis.score}</span>
-              <span className="metric-base">/ 100</span>
-            </div>
-            <p className="metric-caption">{getScoreSummary(analysis.score)}</p>
-          </div>
-
-          {analysis.issues && analysis.issues.length > 0 && (
-            <div className="findings-section">
-              <div className="findings-header">
-                <span className="findings-label">Detected Findings</span>
-                <span className="findings-count">{analysis.issues.length}</span>
-              </div>
-
-              <div className="findings-list">
-                {analysis.issues.map((issue, idx) => (
-                  <div key={idx} className="finding-card">
+          {analysis.issues && analysis.issues.length > 0 ? (
+            <div className="findings-table">
+              {analysis.issues.map((issue, idx) => (
+                <div key={idx} className="finding-row">
+                  <div className="finding-main">
                     <div className="finding-header">
                       <span className={`finding-tag tag-${issue.severity?.toLowerCase()}`}>
                         {issue.severity}
@@ -64,38 +45,23 @@ function AnalysisDetails({ analysis }) {
                       <span className="finding-category">
                         {issue.type?.replace('_', ' ')}
                       </span>
+                      {issue.file && (
+                        <code className="finding-file-badge">
+                          {issue.file}{issue.line ? `:${issue.line}` : ''}
+                        </code>
+                      )}
                     </div>
 
-                    <p className="finding-message">{issue.message}</p>
-
-                    {issue.file && (
-                      <p className="finding-path">
-                        {issue.file}{issue.line ? `:${issue.line}` : ''}
-                      </p>
-                    )}
-
+                    <p className="finding-title">{issue.message}</p>
+                    
                     {issue.recommendation && (
-                      <div className="remediation-note">
-                        <span className="remediation-title">Suggested fix</span>
-                        <p className="remediation-body">{issue.recommendation}</p>
-                      </div>
+                      <p className="finding-recommendation">{issue.recommendation}</p>
                     )}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
-          )}
-
-          {analysis.recommendations && analysis.recommendations[0] && (
-            <div className="summary-banner">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="16" x2="12" y2="12" />
-                <line x1="12" y1="8" x2="12.01" y2="8" />
-              </svg>
-              <p>{analysis.recommendations[0]}</p>
-            </div>
-          )}
+          ) : null}
         </div>
       )}
     </div>
