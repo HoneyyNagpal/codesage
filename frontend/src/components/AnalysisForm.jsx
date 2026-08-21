@@ -17,79 +17,75 @@ function AnalysisForm({ onSuccess }) {
       onSuccess(result);
       setRepoUrl('');
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to submit analysis');
+      setError(err.response?.data?.error || 'Failed to submit repository for review');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="card analysis-form">
-      <div className="form-icon">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-        </svg>
+    <div className="surface-card form-sticky">
+      <div className="form-heading-area">
+        <h2 className="section-heading">Analyze Repository</h2>
+        <p className="section-subtext">Run a full static check covering architecture, security, and maintainability.</p>
       </div>
-      
-      <div className="card-header">
-        <h2 className="card-title">Analyze Repository</h2>
-        <p className="card-subtitle">
-          Submit a GitHub repository for comprehensive AI-powered code review covering security, performance, and best practices
-        </p>
-      </div>
-      
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label className="form-label">
+
+      <form onSubmit={handleSubmit} className="repository-form">
+        <div className="field-group">
+          <label htmlFor="repo-url" className="field-label">
             GitHub Repository URL
           </label>
-          <input
-            type="url"
-            value={repoUrl}
-            onChange={(e) => setRepoUrl(e.target.value)}
-            placeholder="https://github.com/username/repository"
-            className="form-input"
-            required
-          />
+          <div className="field-input-wrap">
+            <svg className="field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+            <input
+              id="repo-url"
+              type="url"
+              value={repoUrl}
+              onChange={(e) => setRepoUrl(e.target.value)}
+              placeholder="https://github.com/organization/repo"
+              className="text-input"
+              required
+            />
+          </div>
         </div>
 
         {error && (
-          <div className="error-message">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
+          <div className="alert-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
             <span>{error}</span>
           </div>
         )}
 
-        <button type="submit" disabled={loading} className="submit-button">
-          <span className="button-content">
-            {loading ? (
-              <>
-                <span className="spinner"></span>
-                Analyzing Repository...
-              </>
-            ) : (
-              
-              
-                   'Start AI Analysis'
-              
-            )}
-          </span>
+        <button type="submit" disabled={loading} className="submit-action">
+          {loading ? (
+            <span className="btn-loading-state">
+              <span className="inline-spinner" />
+              Analyzing Repository...
+            </span>
+          ) : (
+            'Start AI Analysis'
+          )}
         </button>
 
-        <div className="form-stats">
-          <div className="stat-item">
-            <div className="stat-value">Security</div>
-            <div className="stat-label">Check</div>
+        <div className="feature-badges-row">
+          <div className="feature-pill">
+            <span className="feature-dot dot-security" />
+            <span>Security Audits</span>
           </div>
-          <div className="stat-item">
-            <div className="stat-value">Performance</div>
-            <div className="stat-label">Analysis</div>
+          <div className="feature-pill">
+            <span className="feature-dot dot-perf" />
+            <span>Performance</span>
           </div>
-          <div className="stat-item">
-            <div className="stat-value">Quality</div>
-            <div className="stat-label">Review</div>
+          <div className="feature-pill">
+            <span className="feature-dot dot-quality" />
+            <span>Clean Code</span>
           </div>
         </div>
       </form>

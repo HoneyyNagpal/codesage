@@ -1,109 +1,98 @@
-.analyses-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.analyses-count {
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.analyses-list {
+.analyses-feed {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-}
-
-.analysis-item {
-  border: 2px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 1.25rem;
-  transition: all 0.2s;
-}
-
-.analysis-item:hover {
-  border-color: #667eea;
-}
-
-.analysis-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.analysis-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.repo-link {
-  font-size: 15px;
-  font-weight: 600;
-  color: #667eea;
-  text-decoration: none;
-  display: block;
-  margin-bottom: 0.5rem;
-}
-
-.analysis-date {
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.status-badge-small {
-  padding: 0.375rem 0.75rem;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.status-badge-small.completed {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.status-badge-small.processing {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.score-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 0.75rem;
-}
-
-.score-progress {
-  flex: 1;
-  height: 8px;
-  background: #e5e7eb;
-  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-surface);
   overflow: hidden;
 }
 
-.score-fill {
-  height: 100%;
-  border-radius: 10px;
+.analysis-row {
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 1.125rem 1.25rem;
 }
 
-.score-fill.high {
-  background: #10b981;
+.analysis-row:last-child {
+  border-bottom: none;
 }
 
-.score-fill.medium {
-  background: #f59e0b;
+.analysis-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
 }
 
-.score-fill.low {
-  background: #ef4444;
+.repo-meta-block {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  min-width: 0;
 }
 
-.score-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1f2937;
+.repository-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #93c5fd;
+  text-decoration: none;
+}
+
+.repository-link:hover {
+  text-decoration: underline;
+}
+
+.timestamp {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.status-meta-block {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-shrink: 0;
+}
+
+.score-pill {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.score-pill-high {
+  background: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+}
+
+.score-pill-medium {
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+}
+
+.score-pill-low {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+}
+
+.state-tag {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  text-transform: capitalize;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+
+.state-tag.state-completed {
+  color: #34d399;
+}
+
+.state-tag.state-processing {
+  color: #93c5fd;
 }

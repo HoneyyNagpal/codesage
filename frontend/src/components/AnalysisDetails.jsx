@@ -8,74 +8,92 @@ function AnalysisDetails({ analysis }) {
     return null;
   }
 
-  const getScoreText = (score) => {
-    if (score >= 80) return 'Excellent - Outstanding code quality';
-    if (score >= 60) return 'Good - Minor improvements recommended';
-    return 'Needs Work - Several issues need attention';
+  const getScoreSummary = (score) => {
+    if (score >= 80) return 'High code health and best practice adherence.';
+    if (score >= 60) return 'Acceptable quality with specific maintenance recommendations.';
+    return 'Critical attention required across security or architecture areas.';
   };
 
   return (
-    <div>
-      <button onClick={() => setIsOpen(!isOpen)} className="details-toggle">
-        {isOpen ? '▼ Hide Analysis Details' : '▶ View Detailed Analysis'}
+    <div className="details-wrapper">
+      <button 
+        type="button"
+        onClick={() => setIsOpen(!isOpen)} 
+        className="details-toggle-btn"
+      >
+        <svg 
+          className={`toggle-caret ${isOpen ? 'is-open' : ''}`}
+          width="14" 
+          height="14" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round"
+        >
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+        <span>{isOpen ? 'Hide breakdown' : 'View full breakdown'}</span>
       </button>
 
       {isOpen && (
-        <div className="details-content">
-          {/* Score Card */}
-          <div className="score-card">
-            <h4>Overall Code Quality Score</h4>
-            <div className="score-display">
-              <span className="score-number">{analysis.score}</span>
-              <span className="score-total">/100</span>
+        <div className="details-expanded-panel">
+          <div className="metric-highlight-card">
+            <div className="metric-score-group">
+              <span className="metric-value">{analysis.score}</span>
+              <span className="metric-base">/ 100</span>
             </div>
-            <p className="score-label">
-              {getScoreText(analysis.score)}
-            </p>
+            <p className="metric-caption">{getScoreSummary(analysis.score)}</p>
           </div>
 
-          {/* Issues Section */}
           {analysis.issues && analysis.issues.length > 0 && (
-            <div className="issues-section">
-              <div className="issues-header">
-                <h3 className="issues-title">Issues Found</h3>
-                <span className="issues-badge">{analysis.issues.length}</span>
+            <div className="findings-section">
+              <div className="findings-header">
+                <span className="findings-label">Detected Findings</span>
+                <span className="findings-count">{analysis.issues.length}</span>
               </div>
 
-              <div className="issues-list">
+              <div className="findings-list">
                 {analysis.issues.map((issue, idx) => (
-                  <div key={idx} className="issue-card">
-                    <div className="issue-badges">
-                      <span className={`severity-badge ${issue.severity}`}>
+                  <div key={idx} className="finding-card">
+                    <div className="finding-header">
+                      <span className={`finding-tag tag-${issue.severity?.toLowerCase()}`}>
                         {issue.severity}
                       </span>
-                      <span className="type-badge">
-                        {issue.type.replace('_', ' ')}
+                      <span className="finding-category">
+                        {issue.type?.replace('_', ' ')}
                       </span>
                     </div>
-                    
-                    <h5 className="issue-message">{issue.message}</h5>
-                    
-                    <p className="issue-location">
-                      {issue.file}:{issue.line}
-                    </p>
-                    
-                    <div className="recommendation-box">
-                      <p className="recommendation-title">Recommendation</p>
-                      <p className="recommendation-text">{issue.recommendation}</p>
-                    </div>
+
+                    <p className="finding-message">{issue.message}</p>
+
+                    {issue.file && (
+                      <p className="finding-path">
+                        {issue.file}{issue.line ? `:${issue.line}` : ''}
+                      </p>
+                    )}
+
+                    {issue.recommendation && (
+                      <div className="remediation-note">
+                        <span className="remediation-title">Suggested fix</span>
+                        <p className="remediation-body">{issue.recommendation}</p>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Summary */}
           {analysis.recommendations && analysis.recommendations[0] && (
-            <div className="summary-box">
-              <p className="summary-text">
-                {analysis.recommendations[0]}
-              </p>
+            <div className="summary-banner">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+              <p>{analysis.recommendations[0]}</p>
             </div>
           )}
         </div>
