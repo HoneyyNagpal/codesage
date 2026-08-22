@@ -281,8 +281,10 @@ class PythonParser:
                     "line": node.lineno,
                     "rule_id": "BARE_EXCEPT"
                 })
-            
-            # Global variables (excluding constants)
+
+        # Global variables (excluding constants) - only true module-level assignments,
+        # not ones nested inside functions/methods/classes
+        for node in tree.body:
             if isinstance(node, ast.Assign):
                 for target in node.targets:
                     if isinstance(target, ast.Name):
@@ -295,5 +297,5 @@ class PythonParser:
                                 "line": node.lineno,
                                 "rule_id": "GLOBAL_VARIABLE"
                             })
-        
+
         return issues
