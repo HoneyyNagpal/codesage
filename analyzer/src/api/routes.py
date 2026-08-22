@@ -44,7 +44,7 @@ async def perform_analysis(analysis_id: str, repo_url: str, language: str):
         client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=[
                 {"role": "system", "content": "You are a code reviewer. Analyze GitHub repositories and identify issues. Always respond with valid JSON only."},
                 {"role": "user", "content": f"Analyze this GitHub repository and find 3-5 real issues: {repo_url}\n\nThe repository is about: {repo_url.split('/')[-1].replace('-', ' ').replace('_', ' ')}\n\nRespond with JSON in this format: {{\"issues\": [{{\"type\": \"security\", \"severity\": \"high\", \"file\": \"filename.py\", \"line\": 10, \"message\": \"description\", \"recommendation\": \"how to fix\"}}]}}"}
