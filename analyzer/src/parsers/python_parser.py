@@ -298,4 +298,20 @@ class PythonParser:
                                 "rule_id": "GLOBAL_VARIABLE"
                             })
 
+        # Detect nested loops (real performance risk, not a guess)
+        loop_types = (ast.For, ast.While)
+        for node in ast.walk(tree):
+            if isinstance(node, loop_types):
+                for child in ast.walk(node):
+                    if child is not node and isinstance(child, loop_types):
+                        issues.append({
+                            "severity": "medium",
+                            "category": "performance",
+                            "title": "Nested loop detected",
+                            "description": "Nested loops can lead to O(n^2) or worse time complexity - verify this scales for expected input size",
+                            "line": node.lineno,
+                            "rule_id": "NESTED_LOOP",
+                        })
+                        break  # only flag once per outer loop
+
         return issues
