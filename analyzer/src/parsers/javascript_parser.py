@@ -1,22 +1,33 @@
+import json
+import os
+import subprocess
 from typing import Dict, List, Any
 import structlog
 
-try:
-    import esprima
-except ImportError:  # pragma: no cover
-    esprima = None
-
 logger = structlog.get_logger()
+
+# js_ast/parse.js lives at analyzer/js_ast/parse.js, this file lives at
+# analyzer/src/parsers/javascript_parser.py
+_PARSE_SCRIPT = os.path.normpath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "js_ast", "parse.js")
+)
 
 DECISION_TYPES = {
     "IfStatement", "ForStatement", "ForInStatement", "ForOfStatement",
     "WhileStatement", "DoWhileStatement", "CatchClause", "ConditionalExpression",
 }
-FUNCTION_TYPES = {"FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"}
+# Babel represents class/object methods as ClassMethod/ObjectMethod rather
+# than esprima's plain FunctionExpression - include both so methods actually
+# get analyzed instead of silently skipped.
+FUNCTION_TYPES = {
+    "FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression",
+    "ClassMethod", "ObjectMethod",
+}
+LOOP_TYPES = {"ForStatement", "ForInStatement", "ForOfStatement", "WhileStatement", "DoWhileStatement"}
 
 
 def _walk(node):
-    """Generic recursive walker over esprima's dict-based AST (from toDict())."""
+    """Generic recursive walker over the Babel AST (plain dicts/lists from JSON)."""
     if isinstance(node, dict):
         yield node
         for value in node.values():
@@ -46,43 +57,79 @@ def _cyclomatic_complexity(node) -> int:
     return complexity
 
 
+def _infer_variable_assigned_names(tree):
+    """Babel doesn't attach a name to `const handleSubmit = () => {}` - the
+    name lives on the VariableDeclarator, not the function node. Tag it on
+    directly (same dict objects, so this mutates the tree in place)."""
+    for node in _walk(tree):
+        if node.get("type") == "VariableDeclarator":
+            init = node.get("init")
+            var_name = (node.get("id") or {}).get("name")
+            if init and var_name and init.get("type") in ("ArrowFunctionExpression", "FunctionExpression"):
+                init["_inferred_name"] = var_name
+
+
 def _function_name(node) -> str:
+    if node.get("_inferred_name"):
+        return node["_inferred_name"]
+    # FunctionDeclaration/FunctionExpression use 'id', ClassMethod/ObjectMethod use 'key'
     if node.get("id") and node["id"].get("name"):
         return node["id"]["name"]
+    if node.get("key") and node["key"].get("name"):
+        return node["key"]["name"]
     return "anonymous"
 
 
 class JavaScriptParser:
-    """Real AST-based analysis for JavaScript/JSX using esprima. TypeScript-only
-    syntax (type annotations, interfaces) will fail to parse - caller should
-    fall back to a lighter-weight pass for .ts/.tsx files with such syntax."""
+    """Real AST-based analysis for JavaScript/JSX/TypeScript via a Node+Babel
+    subprocess. Unlike a pure-Python parser (esprima), Babel supports every
+    modern syntax feature in active use: optional chaining, nullish
+    coalescing, JSX, TypeScript types, decorators, etc."""
 
     def __init__(self):
         self.logger = logger.bind(parser="javascript")
 
+    def _run_babel(self, code: str) -> Dict[str, Any]:
+        try:
+            result = subprocess.run(
+                ["node", _PARSE_SCRIPT],
+                input=code.encode("utf-8"),
+                capture_output=True,
+                timeout=10,
+            )
+        except FileNotFoundError:
+            return {"error": "node runtime not available in this environment"}
+        except subprocess.TimeoutExpired:
+            return {"error": "parse timed out"}
+
+        stdout = result.stdout.decode("utf-8", errors="replace")
+        stderr = result.stderr.decode("utf-8", errors="replace")
+
+        if result.returncode != 0 and not stdout:
+            return {"error": f"node process failed: {stderr[:300]}"}
+
+        try:
+            return json.loads(stdout)
+        except json.JSONDecodeError:
+            return {"error": f"could not parse node output: {stdout[:200]}"}
+
     def parse(self, code: str, file_path: str) -> Dict[str, Any]:
-        if esprima is None:
+        parsed = self._run_babel(code)
+
+        if parsed.get("error"):
+            self.logger.info(f"JS/TS parse failed for {file_path}: {parsed['error']}")
             return {
-                "file_path": file_path, "error": "esprima not installed",
+                "file_path": file_path,
+                "error": parsed["error"],
                 "functions": [], "classes": [], "issues": [], "metrics": {},
             }
 
-        try:
-            tree = esprima.parseModule(
-                code, options={"loc": True, "jsx": True, "tolerant": True}
-            ).toDict()
-        except Exception as e:
-            self.logger.info(f"JS parse failed for {file_path}: {e}")
-            return {
-                "file_path": file_path,
-                "error": f"Parse error (possibly TypeScript-specific syntax): {e}",
-                "functions": [], "classes": [], "issues": [], "metrics": {},
-            }
+        tree = parsed.get("ast", {})
+        _infer_variable_assigned_names(tree)
 
         functions = self._extract_functions(tree)
         classes = self._extract_classes(tree)
         issues = self._detect_issues(tree, functions)
-
         metrics = self._calculate_file_metrics(code, functions, classes)
 
         return {
@@ -115,7 +162,7 @@ class JavaScriptParser:
             if node.get("type") in ("ClassDeclaration", "ClassExpression"):
                 start, end = _line_span(node)
                 body = (node.get("body") or {}).get("body", [])
-                methods = sum(1 for m in body if m.get("type") == "MethodDefinition")
+                methods = sum(1 for m in body if m.get("type") == "ClassMethod")
                 classes.append({
                     "name": (node.get("id") or {}).get("name", "anonymous"),
                     "line_start": start,
@@ -151,7 +198,6 @@ class JavaScriptParser:
         for node in _walk(tree):
             t = node.get("type")
 
-            # Empty catch block - swallows errors silently
             if t == "CatchClause":
                 body = (node.get("body") or {}).get("body", [])
                 if not body:
@@ -165,7 +211,6 @@ class JavaScriptParser:
                         "rule_id": "EMPTY_CATCH",
                     })
 
-            # var instead of let/const
             if t == "VariableDeclaration" and node.get("kind") == "var":
                 start, _ = _line_span(node)
                 issues.append({
@@ -177,7 +222,6 @@ class JavaScriptParser:
                     "rule_id": "VAR_USAGE",
                 })
 
-            # Loose equality
             if t == "BinaryExpression" and node.get("operator") in ("==", "!="):
                 start, _ = _line_span(node)
                 issues.append({
@@ -189,13 +233,11 @@ class JavaScriptParser:
                     "rule_id": "LOOSE_EQUALITY",
                 })
 
-        # Nested loops - real performance risk
-        loop_types = {"ForStatement", "ForInStatement", "ForOfStatement", "WhileStatement", "DoWhileStatement"}
         for node in _walk(tree):
-            if node.get("type") in loop_types:
+            if node.get("type") in LOOP_TYPES:
                 body = node.get("body")
                 for child in _walk(body):
-                    if child is not node and child.get("type") in loop_types:
+                    if child is not node and child.get("type") in LOOP_TYPES:
                         start, _ = _line_span(node)
                         issues.append({
                             "severity": "medium",
