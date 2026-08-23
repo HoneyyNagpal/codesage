@@ -95,6 +95,8 @@ async def _fetch_source_files(owner: str, repo: str, client: httpx.AsyncClient):
             raise RuntimeError("github_rate_limited")
 
         if tree_resp.status_code != 200:
+            print(f"GitHub tree fetch for {owner}/{repo}@{branch} failed: "
+                  f"status={tree_resp.status_code} body={tree_resp.text[:300]}")
             continue
 
         tree = tree_resp.json().get("tree", [])
@@ -106,6 +108,9 @@ async def _fetch_source_files(owner: str, repo: str, client: httpx.AsyncClient):
             and "node_modules" not in item["path"]
             and not item["path"].startswith(("dist/", "build/", ".venv/"))
         ]
+        print(f"GitHub tree for {owner}/{repo}@{branch}: {len(tree)} total items, "
+              f"{len(entries)} matched supported extensions/size limits")
+
         # Prioritize non-test files, spread across languages rather than
         # grabbing 8 files of the same type
         entries.sort(key=lambda i: ("test" in i["path"].lower(), i["path"]))
@@ -122,8 +127,12 @@ async def _fetch_source_files(owner: str, repo: str, client: httpx.AsyncClient):
                         "content": file_resp.text,
                         "language": LANGUAGE_EXTENSIONS[ext],
                     })
+                else:
+                    print(f"Raw fetch for {entry['path']} returned status {file_resp.status_code}")
             except httpx.HTTPError as e:
                 print(f"GitHub raw fetch error for {entry['path']}: {e}")
+
+        print(f"GitHub fetch for {owner}/{repo}@{branch}: {len(files)}/{len(selected)} files actually fetched")
 
         if files:
             break  # found the right branch
