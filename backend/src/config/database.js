@@ -7,8 +7,11 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
     ssl: {
       require: true,
       rejectUnauthorized: false
-    }
+    
+    },
+     family: 4
   },
+  
   pool: {
     max: 5,
     min: 0,
